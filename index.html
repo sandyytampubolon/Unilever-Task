@@ -27,38 +27,46 @@
     <div id="taskList">
         </div>
 
-    <script>
-        Office.onReady((info) => {
-            if (info.host === Office.HostType.Excel) {
-                loadTasks(); // Muat data saat pertama kali dibuka
-            }
-        });
+<script>
+    // Pastikan Office.js siap sebelum melakukan apa pun
+    Office.onReady((info) => {
+        if (info.host === Office.HostType.Excel) {
+            console.log("Office.js siap di Excel.");
+            // Aktifkan tombol setelah Office siap
+            document.getElementById('btnTambah').disabled = false;
+            document.getElementById('btnRefresh').disabled = false;
+            loadTasks(); 
+        }
+    });
 
-        // FUNGSI 1: Menambah Tugas
-        async function addTask() {
-            const tugas = document.getElementById('tugas').value;
-            const deadline = document.getElementById('deadline').value;
+    async function addTask() {
+        const tugas = document.getElementById('tugas').value;
+        const deadline = document.getElementById('deadline').value;
 
-            if (!tugas || !deadline) return alert("Isi data dulu!");
+        if (!tugas || !deadline) return alert("Isi data dulu!");
 
+        try {
             await Excel.run(async (context) => {
                 const sheet = context.workbook.worksheets.getActiveWorksheet();
                 const table = sheet.tables.getItem("TabelTugas");
                 
-                // Menambah baris: [Tugas, Deadline, Status]
                 table.rows.add(null, [[tugas, deadline, "Belum Selesai"]]);
                 
                 await context.sync();
                 document.getElementById('tugas').value = '';
-                loadTasks(); // Refresh list setelah tambah
+                loadTasks(); 
             });
+        } catch (error) {
+            console.error(error);
+            alert("Gagal menambah data. Pastikan tabel bernama 'TabelTugas' sudah ada.");
         }
+    }
 
-        // FUNGSI 2: Menampilkan Daftar Tugas dari Excel
-        async function loadTasks() {
-            const taskListDiv = document.getElementById('taskList');
-            taskListDiv.innerHTML = '<p class="text-center">Memuat data...</p>';
+    async function loadTasks() {
+        const taskListDiv = document.getElementById('taskList');
+        taskListDiv.innerHTML = '<p class="text-center">Memuat data...</p>';
 
+        try {
             await Excel.run(async (context) => {
                 const table = context.workbook.worksheets.getActiveWorksheet().tables.getItem("TabelTugas");
                 const range = table.getDataBodyRange();
@@ -81,10 +89,11 @@
                         </div>
                     `;
                 });
-            }).catch(err => {
-                taskListDiv.innerHTML = '<p class="text-danger">Tabel "TabelTugas" tidak ditemukan.</p>';
             });
+        } catch (err) {
+            taskListDiv.innerHTML = '<p class="text-danger">Tabel "TabelTugas" tidak ditemukan atau kosong.</p>';
         }
-    </script>
+    }
+</script>
 </body>
 </html>
