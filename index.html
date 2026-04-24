@@ -18,30 +18,38 @@
         <h6>Tambah Tugas Baru</h6>
         <input type="text" id="tugas" class="form-control form-control-sm mb-2" placeholder="Nama Tugas">
         <input type="date" id="deadline" class="form-control form-control-sm mb-2">
-        <button onclick="addTask()" class="btn btn-primary btn-sm w-100">Tambah ke Excel</button>
+        <button id="btnTambah" onclick="addTask()" class="btn btn-primary btn-sm w-100" disabled>Tambah ke Excel</button>
     </div>
 
     <h6>Daftar Tugas (Live dari Excel)</h6>
-    <button onclick="loadTasks()" class="btn btn-outline-secondary btn-sm mb-3 w-100">🔄 Refresh Daftar</button>
+    <button id="btnRefresh" onclick="loadTasks()" class="btn btn-outline-secondary btn-sm mb-3 w-100" disabled>🔄 Refresh Daftar</button>
     
-    <div id="taskList">
-        </div>
+    <div id="taskList"></div>
 
 <script>
-    // Pastikan Office.js siap sebelum melakukan apa pun
+    // 1. Inisialisasi: Tunggu Office siap
     Office.onReady((info) => {
         if (info.host === Office.HostType.Excel) {
-            console.log("Office.js siap di Excel.");
-            // Aktifkan tombol setelah Office siap
+            console.log("Office.js siap!");
+            // Aktifkan tombol HANYA jika Office sudah siap
             document.getElementById('btnTambah').disabled = false;
             document.getElementById('btnRefresh').disabled = false;
             loadTasks(); 
+        } else {
+            console.error("Aplikasi ini hanya bisa berjalan di dalam Excel.");
         }
     });
 
     async function addTask() {
-        const tugas = document.getElementById('tugas').value;
-        const deadline = document.getElementById('deadline').value;
+        // Pastikan objek Excel tersedia
+        if (typeof Excel === 'undefined') {
+            return alert("Koneksi ke Excel belum siap. Mohon tunggu.");
+        }
+
+        const tugasInput = document.getElementById('tugas');
+        const deadlineInput = document.getElementById('deadline');
+        const tugas = tugasInput.value;
+        const deadline = deadlineInput.value;
 
         if (!tugas || !deadline) return alert("Isi data dulu!");
 
@@ -53,7 +61,7 @@
                 table.rows.add(null, [[tugas, deadline, "Belum Selesai"]]);
                 
                 await context.sync();
-                document.getElementById('tugas').value = '';
+                tugasInput.value = '';
                 loadTasks(); 
             });
         } catch (error) {
@@ -63,6 +71,8 @@
     }
 
     async function loadTasks() {
+        if (typeof Excel === 'undefined') return;
+
         const taskListDiv = document.getElementById('taskList');
         taskListDiv.innerHTML = '<p class="text-center">Memuat data...</p>';
 
